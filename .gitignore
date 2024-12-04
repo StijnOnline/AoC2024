@@ -396,3 +396,4 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/AdventOfCode2024/AdventOfCode2024/*/*Input.txt
