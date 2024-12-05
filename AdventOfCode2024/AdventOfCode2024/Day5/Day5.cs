@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Data;
 
 internal class Day5 : Day
 {
@@ -37,6 +38,9 @@ internal class Day5 : Day
         ParseInput(input, out List<Tuple<int, int>> orderingRules, out List<List<int>> pageList);
         var incorrectPageLists = pageList.Where(p => !OrderPageCorrect(orderingRules, p));
         var correctPageLists = incorrectPageLists.Select(l=>CreateSortedList(orderingRules, l));
+        var comp = new PageComparer(orderingRules);
+        //test alternative:
+        correctPageLists = incorrectPageLists.Select(l => l.OrderBy(p=>p,comp).ToList());
         //incorrectPageLists.Select(l=>string.Join(",", l)).Zip(correctPageLists.Select(l => string.Join(",", l))).ToList().ForEach(l => Console.WriteLine( l.First + " => " + l.Second));
         var count = correctPageLists.Select(p => GetMiddleNumber(p)).Sum();
         return count.ToString();
@@ -82,3 +86,28 @@ internal class Day5 : Day
         return numbers[numbers.Count / 2];//assume uneven count
     }
 }
+
+public class PageComparer : IComparer<int>
+{
+    List<Tuple<int, int>> orderingRules;
+
+    public PageComparer(List<Tuple<int, int>> orderingRules)
+    {
+        this.orderingRules = orderingRules;
+    }
+
+    public int Compare(int x, int y)
+    {
+        if (orderingRules.Any(r=>r.Item1==x && r.Item2==y))
+        {
+            return -1;
+        }
+        else if (orderingRules.Any(r => r.Item1 == y && r.Item2 == x))
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+}
+
