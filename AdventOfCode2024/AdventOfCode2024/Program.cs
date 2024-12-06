@@ -1,5 +1,5 @@
 ﻿
-int dayNumber = 5;
+int dayNumber = 6;
 
 Type t = Type.GetType("Day"+dayNumber);
 Day day = (Day)Activator.CreateInstance(t);
