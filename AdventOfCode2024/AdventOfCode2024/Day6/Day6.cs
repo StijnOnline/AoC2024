@@ -2,15 +2,13 @@
 
 internal class Day6 : Day
 {
-    public struct GuardPos : IEquatable<GuardPos>
+    public struct GuardPos
     {
         public V2 pos;
         public V2 dir;
         public GuardPos(V2 pos, V2 dir) { this.pos = pos; this.dir = dir; }
         public int x => pos.x;
         public int y => pos.y;
-
-        public bool Equals(GuardPos other) => pos == other.pos && dir == other.dir;
 
         public GuardPos Next => new GuardPos(pos + dir, dir);
 
@@ -24,16 +22,13 @@ internal class Day6 : Day
         }
     }
 
-    public struct V2 : IEquatable<V2>
+    public class V2 : Tuple<int, int>
     {
-        public V2(int x, int y) { this.x = x;this.y = y; }
-        public int x;
-        public int y;
+        public V2(int item1, int item2) : base(item1, item2) { }
+        public int x => Item1;
+        public int y => Item2;
 
-        public bool Equals(V2 other) => x == other.x && y == other.y;
         public static V2 operator +(V2 a, V2 b) => new V2(a.x + b.x, a.y + b.y);
-        public static bool operator ==(V2 a, V2 b) => a.Equals(b);
-        public static bool operator !=(V2 a, V2 b) => !a.Equals(b);
     }
 
     //top left = (0,0)
@@ -59,7 +54,7 @@ internal class Day6 : Day
         var obstacles = ParseInput(input, out V2 pos);
         return GetPath(obstacles, new GuardPos(pos, startDir), out _).Select(p=>p.pos).Distinct().Count().ToString();
     }
-    public string Star2(string input, bool example = false)
+    public string Star2(string input, bool example = false)//takes ~10 seconds
     {
         var obstacles = ParseInput(input, out V2 startPos);
         var normalPath = GetPath(obstacles, new GuardPos(startPos, startDir), out _);
