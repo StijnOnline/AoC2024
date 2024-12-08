@@ -11,9 +11,6 @@ internal class Day7 : Day
     {
         var equations = ParseInput(input);
         return equations.Where(e => CheckEquation(e)).Select(e => e.Item1).Sum().ToString();
-        //Guess1: 30406496563 too low
-        //Guess2: 3245122494391 too low
-        //Guess3: 3245122495222 too high
     }
     public string Star2(string input, bool example = false)
     {
@@ -21,20 +18,43 @@ internal class Day7 : Day
         return "";
     }
 
-    bool CheckEquation((long, List<long> ) equation, int index=0, long total =0)
+    bool CheckEquation((long, List<long> ) equation, int index = 0, long total =0)
     {
         (long target, List<long> values) = equation;
-        if (index >= values.Count) return false;
-        if (index == 0) {
+        if (index == values.Count) 
+            return total == target;
+        if (index == 0) 
             return CheckEquation(equation, index+1, values[0]);
-        }
-        if (total * values[index] == target) return true;
+        
         if (total * values[index] <= target)
             if (CheckEquation(equation, index + 1, total * values[index])) return true;
 
-        if (total + values[index] == target) return true;
         if (total + values[index] <= target)
             if (CheckEquation(equation, index + 1, total + values[index])) return true;
+
+        return false;
+    }
+
+    bool CheckEquationBackward((long, List<long>) equation, int index, long total)
+    {
+        (long target, List<long> values) = equation;
+        if (index < 0) 
+            return false;
+        if (total % values[index] == 0)
+        {
+            if(total / values[index]==1)
+                return true;
+            if (CheckEquationBackward(equation, index - 1, total / values[index])) 
+                return true;
+        }
+
+        if (total - values[index] == 0)
+            return true;
+        if (total - values[index] > 0)
+        {
+            if (CheckEquationBackward(equation, index - 1, total - values[index])) 
+                return true;
+        }
 
         return false;
     }
