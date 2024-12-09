@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Linq;
 
 internal class Day6 : Day
 {
@@ -52,7 +53,11 @@ internal class Day6 : Day
     public string Star1(string input, bool example = false)
     {
         var obstacles = ParseInput(input, out V2 pos);
-        return GetPath(obstacles, new GuardPos(pos, startDir), out _).Select(p=>p.pos).Distinct().Count().ToString();
+        Console.WriteLine($"StartPos {pos.x},{pos.y}");
+        var path = GetPath(obstacles, new GuardPos(pos, startDir), out _);
+        Console.WriteLine($"LastPos {path.Last().x},{path.Last().y}");
+        PrintPath(obstacles, path);
+        return path.Select(p=>p.pos).Distinct().Count().ToString();
     }
     public string Star2(string input, bool example = false)//takes ~10 seconds
     {
@@ -96,5 +101,31 @@ internal class Day6 : Day
         return passedPositions;
     }
 
+    public void PrintPath(HashSet<V2> obstacles,HashSet<GuardPos> positions)
+    {
+        int width = obstacles.MaxBy(p => p.x).x;
+        int height = obstacles.MaxBy(p => p.y).y;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if(obstacles.Contains(new V2(x,y))){
+                    Console.Write('#');
+                    continue;
+                }
+                var gPos = positions.FirstOrDefault(g => g.pos.Equals(new V2(x, y)));
+                if (gPos.pos!=null && gPos.dir!=null)
+                {
+                    if(gPos.dir.y==1) Console.Write('v');
+                    if(gPos.dir.y==-1) Console.Write('^');
+                    if(gPos.dir.x==-1) Console.Write('<');
+                    if(gPos.dir.x==1) Console.Write('>');
+                    continue;
+                }
+                Console.Write('.');
+            }
+            Console.WriteLine();
+        }
+    }
 }
 
