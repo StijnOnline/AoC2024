@@ -1,9 +1,7 @@
 ﻿
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.PortableExecutable;
-using System.Text.RegularExpressions;
+using System.Drawing;
+using System.Drawing.Imaging;
+using static Day14;
 
 internal class Day14 : Day
 {
@@ -39,12 +37,22 @@ internal class Day14 : Day
         var bots = ParseInput(input);
         var size = new V2(bots.Max(b=>b.x)+1, bots.Max(b => b.y)+1);
         bots = SimulateBots(bots, size, 100);
-        DebugBots(bots, size);
         return SafetyFactor(bots, size).ToString();
     }
     public string Star2(string input, bool example = false)
     {
-        return "";
+        if(example) return "Skipped";
+        var bots = ParseInput(input);
+        var size = new V2(bots.Max(b => b.x) + 1, bots.Max(b => b.y) + 1);
+        int i = 5000;//skip images
+        bots = SimulateBots(bots, size, i++);
+        var image = new Bitmap(size.x, size.y);
+        for (; i <= 10000; i++)
+        {
+            bots = SimulateBots(bots, size, 1);
+            SaveBotsImage(bots, size, i, image);
+        }
+        return "Created image files";
     }
     public List<Bot> SimulateBots(List<Bot> bots, V2 size, int seconds = 1)
     {
@@ -88,6 +96,21 @@ internal class Day14 : Day
         var Q4 = bots.Where(b => b.x > midX && b.y > midY).Count();  // Bottom-right
 
         return Q1* Q2 * Q3 * Q4;
+    }
+    void SaveBotsImage(List<Bot> bots, V2 size, int imageNR, Bitmap image)
+    {
+
+        for (int y = 0; y < size.y; y++)
+        {
+            for (int x = 0; x < size.x; x++)
+            {
+                var color = bots.Any(b => b.x == x && b.y == y) ? Color.DarkGreen : Color.Black;
+                image.SetPixel(x, y, color);
+            }
+        }
+
+        var folder = @"C:\Users\stijn\Documents\MY_Documents\AoC2024\AdventOfCode2024\AdventOfCode2024\Day 14\Images\";
+        image.Save(@$"{folder}\{imageNR}.bmp", ImageFormat.Bmp);
     }
 }
 
