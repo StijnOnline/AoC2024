@@ -1,29 +1,6 @@
 ﻿
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 internal class Day16 : Day
 {
-    public struct ReindeerPos
-    {
-        public V2 pos;
-        public V2 dir;
-        public ReindeerPos(V2 pos, V2 dir) { this.pos = pos; this.dir = dir; }
-        public int x => pos.x;
-        public int y => pos.y;
-
-        public ReindeerPos Next => new ReindeerPos(pos + dir, dir);
-
-        public ReindeerPos Rotated()
-        {
-            if (dir.y == -1) return new ReindeerPos(pos, new V2(1, 0));
-            if (dir.x == 1) return new ReindeerPos(pos, new V2(0, 1));
-            if (dir.y == 1) return new ReindeerPos(pos, new V2(-1, 0));
-            if (dir.x == -1) return new ReindeerPos(pos, new V2(0, -1));
-            throw new NotImplementedException();
-        }
-    }
-
     public class V2 : Tuple<int, int>
     {
         public V2(int item1, int item2) : base(item1, item2) { }
@@ -74,59 +51,112 @@ internal class Day16 : Day
         return obstacles;
     }
 
-    static V2 startDir = V2.r;
 
     public string Star1(string input, bool example = false)
     {
         var obstacles = ParseInput(input, out V2 start, out V2 end);
         var nodes = PathFind(obstacles, start, end);
-        return nodes[end].Item3.ToString();
+        return nodes.Where(p => p.Key.Item1.Equals(end)).MinBy(p => p.Value.Item1).Value.Item1.ToString();
     }
-    public string Star2(string input, bool example = false)//takes ~10 seconds
+    public string Star2(string input, bool example = false)
     {
-        return "";
+        var obstacles = ParseInput(input, out V2 start, out V2 end);
+        var nodes = PathFind(obstacles, start, end);
+
+        var bestPositions = new HashSet<V2>();
+        var endNode = nodes.Where(p => p.Key.Item1.Equals(end));
+        endNode = endNode.Where(p => p.Value.Item1 == endNode.Min(p2=>p2.Value.Item1)).ToList();
+        bestPositions.Add(end);
+        var checkPositions = endNode.SelectMany(pair=>pair.Value.Item2.Select(posDir=>(posDir.Item1,posDir.Item2))).ToList();
+        while (checkPositions.Count > 0)
+        {
+            var position = checkPositions[0];
+
+            checkPositions.RemoveAt(0);
+
+            bestPositions.Add(position.Item1);
+            if (position.Item1.Equals(start))
+                break;
+            var previousNodes = nodes[position].Item2.ToList();
+            var newnodes = previousNodes.Select(n=>(n.Item1,n.Item2)).Distinct().ToList();
+            checkPositions.AddRange(newnodes);
+        }
+
+        if(example)
+        for (int y = 0; y < 20; y++)
+        {
+            for (int x = 0; x < 20; x++)
+            {
+                if(obstacles.Contains(new V2(x,y))){
+                    Console.Write('#');
+                    continue;
+                }
+
+                if (bestPositions.Contains(new V2(x, y)))
+                {
+                    Console.Write('O');
+                    continue;
+                }
+
+                Console.Write('.');
+            }
+            Console.WriteLine();
+        }
+
+        return bestPositions.Count().ToString();
     }
 
+    //tried doing path finding algorithm from memory
+    //but this case with unique orientations and storing data to deduce all best paths made it hard
+    //also used many tuples, not ideal for clarity
 
-    public Dictionary<V2, (V2, V2, int)> PathFind(HashSet<V2> obstacles, V2 start, V2 end)
+    public Dictionary<(V2, V2), (int, List<(V2, V2, int)>)> PathFind(HashSet<V2> obstacles, V2 start, V2 end)
     {
-        var closedNodes = new Dictionary<V2, (V2, V2, int)>();// pos, (dir to cheapest start,score)
-        var openNodes = new PriorityQueue<(V2, V2, int), int>();//(pos,dir to cheapest start,score) score
-        openNodes.Enqueue((start, V2.l, 0),0);
+        var closedNodes = new Dictionary<(V2, V2),(int, List<(V2, V2,int)>)>();// (pos,dir) => (score, list of previous(pos, dir))
+        var openNodes = new PriorityQueue<(V2, V2, int, (V2, V2, int)), int>();//(pos,dir to cheapest start,score, prevPosDir) score
+        openNodes.Enqueue((start, V2.r, 0, (V2.z,V2.z,0)), 0);
 
         while (openNodes.Count > 0)
         {
             var node = openNodes.Dequeue();
-            if (closedNodes.ContainsKey(node.Item1))
+            var posDir = (node.Item1, node.Item2);
+            if (closedNodes.Any(p=> p.Key.Item1.Equals(node.Item1) && p.Key.Item2.Equals(node.Item2 * -1) && p.Value.Item1 < node.Item3))//going against existing dir with already lower score
             {
-                if(closedNodes[node.Item1].Item3 > node.Item3)
-                    closedNodes[node.Item1] = node;
+                continue;
             }
-            else
+            if (closedNodes.ContainsKey(posDir))
             {
-                closedNodes.Add(node.Item1, node);
+                if (closedNodes[posDir].Item1 == node.Item3)//equal, add previous position
+                {
+                    if (!closedNodes[posDir].Item2.Any(posDir => posDir.Equals(node.Item4)))
+                    {
+                        closedNodes[posDir].Item2.Add(node.Item4);
+                    }
+                }
+                else if (node.Item3 < closedNodes[posDir].Item1)//better, overwrite previous positions
+                {
+                    closedNodes[posDir] = (node.Item3, new List<(V2,V2, int)>() { node.Item4 });
+                }
+                continue;
             }
-            if (node.Item1.Equals(end))
+            closedNodes.Add(posDir, (node.Item3, new List<(V2, V2, int)>() { node.Item4 }));
+
+            var checkPos = node.Item1 + node.Item2;
+            if (!obstacles.Contains(checkPos) && !closedNodes.ContainsKey((checkPos, node.Item2)))
             {
-                break;
+                openNodes.Enqueue((checkPos, node.Item2, node.Item3 + 1, (node.Item1,node.Item2, node.Item3)), node.Item3 + 1);
             }
 
-            var checkPos = node.Item1 - node.Item2;
-            if (!obstacles.Contains(checkPos) && ! closedNodes.ContainsKey(checkPos))
+            checkPos = node.Item1 + node.Item2.RotatedLeft();
+            if (!obstacles.Contains(checkPos))
             {
-                openNodes.Enqueue((checkPos, node.Item2, node.Item3 + 1), node.Item3 + 1);
+                openNodes.Enqueue((node.Item1, node.Item2.RotatedLeft(), node.Item3 + 1000, (node.Item1, node.Item2, node.Item3)), node.Item3 + 1000);
             }
 
-            checkPos = node.Item1 - node.Item2.RotatedLeft();
-            if (!obstacles.Contains(checkPos) && !closedNodes.ContainsKey(checkPos))
+            checkPos = node.Item1 + node.Item2.RotatedRight();
+            if (!obstacles.Contains(checkPos))
             {
-                openNodes.Enqueue((checkPos, node.Item2.RotatedLeft(), node.Item3 + 1001), node.Item3 + 1001);
-            }
-
-            checkPos = node.Item1 - node.Item2.RotatedRight();
-            if (!obstacles.Contains(checkPos) && !closedNodes.ContainsKey(checkPos))
-            {
-                openNodes.Enqueue((checkPos, node.Item2.RotatedRight(), node.Item3 + 1001), node.Item3 + 1001);
+                openNodes.Enqueue((node.Item1, node.Item2.RotatedRight(), node.Item3 + 1000, (node.Item1, node.Item2, node.Item3)), node.Item3 + 1000);
             }
         }
 
