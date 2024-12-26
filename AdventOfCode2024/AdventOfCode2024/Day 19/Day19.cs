@@ -16,6 +16,7 @@ internal class Day19 : Day
     }
 
     Dictionary<string, bool> knownPatterns;
+    Dictionary<string, long> knownCount;
     public string Star1(string input, bool example = false)
     {
         ParseInput(input, out List<string> availablePatterns, out List<string> patterns);
@@ -32,7 +33,7 @@ internal class Day19 : Day
             bool isPossible = IsPossible(patterns[i], availablePatterns);
             if (isPossible)
                 possible++;
-            Console.WriteLine($"{i}: {isPossible}");
+            //Console.WriteLine($"{i}: {isPossible}");
         }
 
         return possible.ToString();
@@ -40,7 +41,20 @@ internal class Day19 : Day
 
     public string Star2(string input, bool example = false)
     {
-        return "";
+        ParseInput(input, out List<string> availablePatterns, out List<string> patterns);
+
+        availablePatterns = availablePatterns.OrderBy(s => s.Length).ToList();
+        knownCount = new Dictionary<string, long>();
+
+        long total = 0;
+        for (int i = 0; i < patterns.Count; i++)
+        {
+            long count = Count(patterns[i], availablePatterns);
+            total += count;
+            Console.WriteLine($"{patterns[i]}: {count}");
+        }
+
+        return total.ToString();
     }
 
     public bool IsPossible(string input, List<string> availablePatterns)
@@ -69,5 +83,27 @@ internal class Day19 : Day
         return false;
     }
 
+
+    public long Count(string input, List<string> availablePatterns)
+    {
+        if (knownCount.TryGetValue(input, out long count))
+        {
+            return count;
+        }
+
+        if (availablePatterns.Contains(input))
+        {
+            count = 1;
+        }
+        
+        foreach (string pattern in availablePatterns)
+        {
+            if (input.StartsWith(pattern))
+                count += Count(input.Substring(pattern.Length), availablePatterns);
+        }
+
+        knownCount.TryAdd(input, count);
+        return count;
+    }
 }
 
